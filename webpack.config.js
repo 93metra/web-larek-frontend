@@ -5,6 +5,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const { DefinePlugin } = require('webpack');
 const TerserPlugin = require("terser-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 
 require('dotenv').config({
   path: path.join(process.cwd(), process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : '.env')
@@ -38,6 +39,11 @@ const config = {
     new DefinePlugin({
       'process.env.DEVELOPMENT': !isProduction,
       'process.env.API_ORIGIN': JSON.stringify(process.env.API_ORIGIN ?? '')
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: './src/public', to: path.resolve(__dirname, './dist') },
+      ]
     })
   ],
   module: {
