@@ -8,12 +8,12 @@ export interface ICard {
 }
 
 export interface ICardsData {
-  _cards: ICard[];
+  cards: ICard[];
+  getCard(id: string): ICard;
 }
 
 export interface IBasketModel {
-  items: ICard[];
-  add(item: ICard): void
+  add(item: ICard): void;
   remove(id: string): void;
   clear(): void;
   getTotal(): number;
@@ -28,22 +28,22 @@ export interface IOrderDetails {
   email: string;
   phone: string;
   address: string;
-  total: number;
-  items: string[];
 }
 
-interface IPage {
+export interface IPage {
 	counter: number;
 	catalog: HTMLElement[];
 	basket: HTMLElement;
 	locked: boolean;
 }
 
-interface IModal {
+export interface IModal {
 	content: HTMLElement;
 	closeButton: HTMLButtonElement;
 }
 
 export interface IView {
-  render(data?: object): HTMLElement;
+  render(template: HTMLTemplateElement): HTMLElement;
 }
+
+export type TemplateType = 'catalog' | 'preview' | 'basket';

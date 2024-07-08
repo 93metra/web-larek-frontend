@@ -46,7 +46,7 @@ yarn build
 -Интерфейс для данных каточки товара (в таком виде данные приходят с сервера).
 
 ```
-export interface ICard {
+interface ICard {
   id: string;
   description: string;
   image: string;
@@ -59,17 +59,17 @@ export interface ICard {
 -Интерфейс для модели данных карточек(товаров).
 
 ```
-export interface ICardsData {
-  _cards: ICard[];
+interface ICardsData {
+  cards: ICard[];
+  getCard(id: string): ICard;
 }
 ```
 
 -Интерфейс для модели данных корзины.
 
 ```
-export interface IBasketModel {
-  items: ICard[];
-  add(item: ICard): void
+interface IBasketModel {
+  add(item: ICard): void;
   remove(id: string): void;
   clear(): void;
   getTotal(): number;
@@ -81,19 +81,17 @@ export interface IBasketModel {
 -Тип данных метода оплаты.
 
 ```
-export type TPaymentMethod = 'online' | 'cash';
+type TPaymentMethod = 'online' | 'cash';
 ```
 
--Интерфейс для модели данных заказа(в формате в котором сервер принимает заказ).
+-Интерфейс для модели данных заказа.
 
 ```
-export interface IOrderDetails {
-    payment: TPaymentMethod;
-    email: string;
-    phone: string;
-    address: string;
-    total: number;
-    items: string[];
+interface IOrderDetails {
+  payment: TPaymentMethod;
+  email: string;
+  phone: string;
+  address: string;
 }
 ```
 
@@ -120,9 +118,15 @@ interface IModal {
 -Базовый интерфейс отображения элементов внутри модалки.
 
 ```
-export interface IView {
-    render(data?: object): HTMLElement;
+interface IView {
+  render(template: HTMLTemplateElement): HTMLElement;
 }
+```
+
+-Тип данных шаблона карточки товара.
+
+```
+type TemplateType = 'catalog' | 'preview' | 'basket';
 ```
 
 ## Архитектура приложения
@@ -162,12 +166,13 @@ export interface IView {
 Отвечает за хранение и логику работы с данными карточек(товаров) загруженных с сервера.\
 Конструктор класса принимает инстант брокера событий\
 В полях класса хранятся следующие данные:
-- _cards: ICard[] - массив объектов карточек.
-- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
+- private _cards: ICard[] - массив объектов карточек.
+- public events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Методы:
-- getCard(id: string): ICard - возвращает карточку по ее id
-- сеттер и геттер для сохранения и получения массива _cards
+- public getCard(id: string): ICard - возвращает карточку по ее id
+- public get cards(): ICard[] - возвращает массив карточек _cards
+- public set cards(cards: ICard[]) - устанавливает массив карточек _cards и вызывает событие 'cards:updated' передавая массив карточек
 
 #### Класс BasketModel
 Реализует интерфейс IBasketModel.
@@ -175,31 +180,39 @@ export interface IView {
 Конструктор класса принимает инстант брокера событий.
 
 В полях класса хранятся следующие данные:
-- items: ICard[] - Хранит товары и их порядковые номера.
-- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
+- private items: ICard[] - Хранит товары и их порядковые номера.
+- public events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Методы:
-- add(item: ICard): void - Добавляет товар в корзину и присваивает ему порядковый номер.
+- public add(item: ICard): void - Добавляет товар в корзину и присваивает ему порядковый номер.
 Вызывает _changed() для уведомления об изменении корзины.
-- remove(id: string): void - Удаляет товар из корзины.
+- public remove(id: string): void - Удаляет товар из корзины.
 Вызывает _changed() для уведомления об изменении корзины.
-- clear(): void - удаляет все товары из корзины.
+- public clear(): void - удаляет все товары из корзины.
 Вызывает _changed() для уведомления об изменении корзины.
-- getTotal(): number - Возвращает количество товаров в корзине.
-- getTotalPrice(): number - Возвращает общую цену.
-- getIds(): string[] - возвращает массив с айди товаров, для передачи в модель заказа.
-- _changed(): void - Защищенный метод, который инициирует событие 'basket:changed', передавая текущие товары корзины.
+- public getTotal(): number - Возвращает количество товаров в корзине.
+- public getTotalPrice(): number - Возвращает общую цену.
+- public getIds(): string[] - возвращает массив с айди товаров, для передачи в модель заказа.
+- private _changed(): void - Защищенный метод, который инициирует событие 'basket:changed', передавая текущие товары корзины.
 
 #### Класс OrderDetails
-Класс отвечает за хранение и заполнение, объекта с данными заказа.
+Класс отвечает за хранение и заполнение, объекта с данными заказа (только данные клиента, список товаров и сумма заказа будут браться из модели корзины).
 
 В полях класса хранятся следующие данные:
-- orderDetails: IOrderDetails - Хранит даные заказа.
+- private _orderDetails: IOrderDetails; - Хранит даные заказа.
 - events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Методы:
-- набор сеттеров для заполнения значений объекта заказа 
-- get order() - возвращает заполненный объект заказа для дальнейшей отправки на сервер
+- public set payment(payment: TPaymentMethod) - Вызывает свой валидатор. Устанавливает способ оплаты. 
+- public set email(email: string) - Вызывает свой валидатор. Устанавливает адрес доставки.
+- public set phone(phone: string) - Вызывает свой валидатор. Устанавливает телефон.
+- public set address(address: string) - Вызывает свой валидатор. Устанавливает адрес доставки.
+- public get order(): IOrderDetails - Возвращает данные заказа.
+
+- private validatePayment(payment: TPaymentMethod): void - валидатор способа оплаты.
+- private validateEmail(email: string): void - валидатор email.
+- private validatePhone(phone: string): void - валидатор телефона.
+- private validateAddress(address: string): void - валидатор адреса.
 
 ### Слой отображения
 
@@ -236,39 +249,24 @@ export interface IView {
 - close() - Удаляет класс modal_active из контейнера, чтобы скрыть модальное окно.
 Очищает содержимое модального окна.
 
-#### Класс СatalogCardVeiw 
-Карточка в каталоге. Реализует интерфейс IView.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
-На карточку уснанавливается слушатель клика инициирующий событие ('product:selected') передавая данные товара.
+#### Класс CardView
+Отображение карточки в любом виде (В каталоге / модалке превью / корзине). 
+Реализует интерфейс IView.
+Конструктор класса принимает инстант брокера событий.
 
 В полях класса хранятся следующие данные:
 - events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
-- cardData: ICard - объект с данными карточки товара.
-- category: HTMLSpanElement - категория товара.
-- title: HTMLElement - название товара.
-- image: HTMLImageElement - изображение товара.
-- price: HTMLSpanElement - цена товара.
 
 Методы:
-- render(data: ICard): HTMLElement - сохраняет данные в поле cardData, заполняет разметку и возвращает готовую карточку.
+- public render(data: ICard, templateType: TemplateType, container: HTMLElement): HTMLElement - возвращает готовый элемент. (находит в разметке нужный элемент шаблона).
+-  private updateCardElement(cardElement: HTMLElement, data: ICard, templateType: TemplateType): void - вызывается внутри метода render. Заполняет разметку в зависимости от типа шаблона.
+- private attachEventListeners(cardElement: HTMLElement, data: ICard, templateType: TemplateType): void - вызывается внутри метода render. Добавляет слушатели событий в зависимости от типа шаблона. 
 
-#### Класс CardPreviewVeiw
-Предпросмотр товара. Реализует интерфейс IView.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
-На кнопку добавления товара уснанавливается слушатель клика инициирующий событие ('product:add') передавая данные товара.
+В зависимости от шаблона нажатие на кнопку вызывает следуюшие события:
+- 'catalog'(карточка товара в каталоге): 'product:selected' + передает данные карточки
+- 'preview'(предпросмотр карточки): 'product:add' + передает данные карточки
+- 'basket'(карточка в корзине): 'product:remove' + передает id товара
 
-В полях класса хранятся следующие данные:
-- events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
-- cardData: ICard - объект с данными карточки товара.
-- category: HTMLSpanElement - категория товара.
-- title: HTMLElement - название товара.
-- image: HTMLImageElement - изображение товара.
-- price: HTMLSpanElement - цена товара.
-- info: HTMLElement - информация о товаре.
-- addToCartButton: HTMLButtonElement - Кнопка добавления в корзину.
-
-Методы:
-- render(data: ICard): HTMLElement - сохраняет данные в поле cardData, заполняет разметку и возвращает готовый элемент.
 
 #### Класс BasketView
 Отображение корзины. Реализует интерфейс IView.
@@ -284,56 +282,66 @@ export interface IView {
 Методы:
 - render(data: {items: HTMLElement[], price: number}): HTMLElement - заполняет разметку и возвращает готовый элемент.
 
-#### Класс BasketItemView
-Отображение товара в корзине. Реализует интерфейс IView.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
-На кнопку удаления заказа уснанавливается слушатель клика инициирующий событие ('basketItem:delete') передавая id товара.
+#### Класс Класс FormView
+Базовый класс для создания форм с поддержкой событий и валидации. Предоставляет методы для работы с элементами формы и обработчиками событий. 
+Конструктор класса принимает инстанс брокера событий (events: IEvents) и контейнер (container: HTMLElement) для размещения формы.
 
 В полях класса хранятся следующие данные:
-- events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
-- id: string - айди товара для передачи при событии
-- index: HTMLSpanElement - порядковый номер товара
-- title: HTMLSpanElement - название товара
-- price: HTMLSpanElement - цена товара
-- deleteButton: HTMLButtonElement - кнопка удаления товара
+- protected events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
+- protected container: HTMLElement - контейнер, в котором будет размещена форма.
+- protected form: HTMLFormElement - элемент формы.
+- protected submitButton: HTMLButtonElement - кнопка отправки формы.
+- protected errorsElement: HTMLElement - элемент для отображения ошибок формы.
 
 Методы:
-- render(data: {id: string, title: string, price: number}): HTMLElement - заполняет разметку и возвращает готовый элемент.
+- protected getInputValues(): { [key: string]: string } - возвращает значения всех полей ввода в форме.
+- protected validate(): boolean - выполняет валидацию формы. Возвращает true, если форма валидна.
+- protected handleSubmit(event: Event): void - обработчик события отправки формы. Предотвращает стандартное поведение и вызывает метод emitEvent(), если форма валидна, иначе показывает сообщение об ошибке.
+- protected emitEvent(): void - метод для генерации события. Реализуется в дочерних классах.
+- render(template: HTMLTemplateElement): HTMLElement - возвращает готовый элемент формы. Реализуется в дочерних классах.
 
-#### Класс PymentMethodView
+#### Класс PymentMethodView (наследует класс FormView)
 Отображение окна с выбором метода оплаты и введением адреса доставки.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
+Конструктор класса принимает инстанс брокера событий (events: IEvents) и контейнер (container: HTMLElement) для размещения формы.
 На кнопку далее уснанавливается слушатель клика инициирующий событие ('goto:email') передавая способ оплаты и адрес.
 
 В полях класса хранятся следующие данные:
 - events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
-- adress: string - хранит введенный адрес
-- paymentMethod: TPaymentMethod - хранит выбранный метод оплаты
-
-- adressInput: HTMLInputElement - поле ввода адреса доставки
-- onlineButton: HTMLButtonElement - кнопка выбора оплаты онлайн
-- cashButton: HTMLButtonElement - кнопка выбора оплаты при получении
-- submitButton: HTMLButtonElement - кнопка далее
+- private addressInput: HTMLInputElement - поле ввода адреса доставки.
+- private onlineButton: HTMLButtonElement - кнопка выбора оплаты онлайн.
+- private cashButton: HTMLButtonElement - кнопка выбора оплаты при получении.
+- private submitButton: HTMLButtonElement - кнопка "далее".
+- private paymentMethod: TPaymentMethod - выбранный метод оплаты.
 
 Методы:
-- render(): HTMLElement - возвращает готовый элемент.
+- protected setupElements(): void - находит и инициализирует элементы формы.
+- protected setupListeners(): void - устанавливает обработчики событий для кнопок и полей ввода.
+- private selectPaymentMethod(method: TPaymentMethod): void - выбирает метод оплаты и обновляет состояние кнопки отправки формы.
+- private handleInput(): void - обработчик ввода в поле адреса. Обновляет состояние кнопки отправки формы.
+- private updateSubmitButtonState(): void - обновляет состояние кнопки отправки формы в зависимости от введенного адреса и выбранного метода оплаты.
+- protected emitEvent(): void - инициирует событие 'goto:email', передавая выбранный метод оплаты и введенный адрес.
+- render(template: HTMLTemplateElement): HTMLElement - возвращает готовый элемент формы.
 
-#### Класс EmailVeiw
-Отображение окна для введения почты и телефона.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
-На кнопку оплатить уснанавливается слушатель клика инициирующий событие ('submit:order') передавая почту и телефон.
+#### Класс EmailVeiw (наследует класс FormView)
+Отображение формы для ввода контактной информации, включая email и телефон.
+Конструктор класса принимает инстанс брокера событий (events: IEvents) и контейнер (container: HTMLElement) для размещения формы.
+На кнопку отправки формы уснанавливается слушатель клика инициирующий событие ('submit:order') передавая почту и телефон.
 
 В полях класса хранятся следующие данные:
 - events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
-- email: string - хранит почту
-- phone: string - хранит телефон
+-  private emailInput: HTMLInputElement - поле ввода email.
+-  private phoneInput: HTMLInputElement - поле ввода телефона.
+-  private submitButton: HTMLButtonElement - кнопка отправки формы.
+-  private errorsElement: HTMLElement - элемент для отображения ошибок формы.
 
-- emailInput: HTMLInputElement - поле ввода почты
-- phoneInput: HTMLInputElement - поле ввода телефона
-- payButton: HTMLButtonElement - кнопка оплатить
 
 Методы:
-- render(): HTMLElement - возвращает готовый элемент.
+- protected setupElements(): void - находит и инициализирует элементы формы.
+- protected setupListeners(): void - устанавливает обработчики событий для полей ввода и кнопки отправки формы.
+- private handleInput(): void - обработчик ввода в поля email и телефона. Обновляет состояние кнопки отправки формы.
+- private updateSubmitButtonState(): void - обновляет состояние кнопки отправки формы в зависимости от введенных email и телефона.
+- protected emitEvent(): void - инициирует событие 'submit:order', передавая введенные email и телефон.
+- render(template: HTMLTemplateElement): HTMLElement - возвращает готовый элемент формы.
 
 #### Класс SuccessMessageView
 Отображение сообщения об успешной оплате.
@@ -350,19 +358,18 @@ export interface IView {
 
 
 ### Презентер
-Модели и отображение будут связываться с использованием событийно-ориентированного подхода.
+Модели и отображение будут связываться с использованием событийно-ориентированного подхода, сам код презентера не будет выделен в отдельный класс, а будет размещен в основном скрипте приложения index.ts.
 Далее описан сценарий работы приложения и применяемые события:
 
 - При загрузке сайта:
 -Создаются экземпляры классов: LarekApi, EventEmitter, CardsData, BasketModel, OrderDetails, PageView, ModalView.
--С сервера запрашивается список товаров и сохраняется в модель CardsData.
--Создается массив элементов карточек товара (СatalogCardVeiw) и вставляется в список товаров внутри (PageView).
+-С сервера запрашивается список товаров и сохраняется в модель CardsData в следствии чего вызывается событие 'cards:updated' передавая массив карточек, на основании переданного массива создается массив элементов карточек товара (СatalogCardVeiw) и вставляется в список товаров внутри (PageView).
 
-- Нажатие на карточку товара в каталоге (СatalogCardVeiw) вызывает событие 'product:selected' передавая данные товара. С использованием этих данных отрисовывается элемент предпросмотра товара (CardPreviewVeiw), вставляется в мадалку (ModalView), после чего, модалка отображается на экране.
+- Нажатие на карточку товара в каталоге (СatalogCardVeiw) вызывает событие 'product:selected' передавая данные товара. С использованием этих данных (CardPreviewVeiw) отрисовывает элемент предпросмотра товара и вставляется в мадалку (ModalView), после чего, модалка отображается на экране.
 
-- Нажатие на кнопку добавления в корзину вызывает событие 'product:add' передавая данные товара. Данные сохраняются в массиве товаров Модели корзины. Модальное окно закрывается.
+- Нажатие на кнопку добавления в корзину вызывает событие 'product:add' передавая данные товара. Данные сохраняются в модель корзины (BasketModel). Модальное окно закрывается.
 
-- При вызове функций добавления товара, удаления товара и очистки корзины, вызывается событие 'basket:changed' передавая id соответствующего товара. Реакцией на это событие является: Соответствующие изменение в модели данных корзины (BasketModel), перерисовка отображения корзины (BasketView) и обнавление счетчика товаров в корзине на главной странице.
+- При вызове функций добавления товара, удаления товара и очистки корзины, вызывается событие 'basket:changed' передавая id соответствующего товара. Реакцией на это событие является: Соответствующее изменение в модели данных корзины (BasketModel), перерисовка отображения корзины (BasketView) и обнавление счетчика товаров в корзине на главной странице.
 
 - Нажатие на корзину вызывает событие 'basket:open'. Используя данные и методы модели корзины отрисовывается элемент корзины (BasketView), отрисовываются элементы корзины (BasketItemView), вставляются в корзину, после чего, корзина вставляется в модалку и отображается на экране.
 
