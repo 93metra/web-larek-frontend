@@ -9,7 +9,7 @@ export interface ICard {
 
 export interface ICardsData {
   cards: ICard[];
-  getCard(id: string): ICard;
+  getCard(id: string): ICard | undefined;
 }
 
 export interface IBasketModel {
@@ -19,6 +19,9 @@ export interface IBasketModel {
   getTotal(): number;
   getTotalPrice(): number;
   getIds(): string[];
+  isEmpty(): boolean;
+  contains(id: string): boolean;
+  items: ICard[];
 }
 
 export type TPaymentMethod = 'online' | 'cash';
@@ -40,10 +43,22 @@ export interface IPage {
 export interface IModal {
 	content: HTMLElement;
 	closeButton: HTMLButtonElement;
+	open(): void;
+	close(): void;
 }
 
-export interface IView {
-  render(template: HTMLTemplateElement): HTMLElement;
+export interface ICardView {
+  render(data: ICard, index?: number): HTMLElement;
 }
 
-export type TemplateType = 'catalog' | 'preview' | 'basket';
+export interface IBasketView {
+  render(data: { items: HTMLElement[]; price: number; isEmpty: boolean }): HTMLElement;
+}
+
+export interface IFormView {
+  render(): HTMLElement;
+}
+
+export interface ISuccess {
+  render(total: number): HTMLElement;
+}
