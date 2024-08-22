@@ -2,70 +2,69 @@ import { ICard } from '../types/index';
 import { EventEmitter } from '../components/base/events';
 import { ICardView } from '../types/index';
 import { CDN_URL } from '../utils/constants';
+import { cloneTemplate } from '../utils/utils';
 
 export abstract class CardView implements ICardView {
   protected events: EventEmitter;
-  private template: HTMLTemplateElement;
+  protected element: HTMLElement;
+  protected categoryElement: HTMLElement;
+  protected priceElement: HTMLElement;
+  protected titleElement: HTMLElement;
+  protected imageElement: HTMLElement;
 
   constructor(eventEmitter: EventEmitter, template: HTMLTemplateElement) {
     this.events = eventEmitter;
-    this.template = template;
+    this.element = cloneTemplate<HTMLElement>(template);
+    this.categoryElement = this.element.querySelector('.card__category') as HTMLElement;
+    this.priceElement = this.element.querySelector('.card__price') as HTMLElement;
+    this.titleElement = this.element.querySelector('.card__title') as HTMLElement;
+    this.imageElement = this.element.querySelector('.card__image') as HTMLElement;
   }
 
-  protected createElement(): HTMLElement {
-    return document.importNode(this.template.content, true).firstElementChild as HTMLElement;
-  }
-
-  protected setCategoryClass(element: HTMLElement, category: string): void {
+  protected setCategoryClass(category: string): void {
     switch (category) {
       case "софт-скил":
-        element.classList.add('card__category_soft');
+        this.categoryElement.classList.add('card__category_soft');
         break;
       case "другое":
-        element.classList.add('card__category_other');
+        this.categoryElement.classList.add('card__category_other');
         break;
       case "дополнительное":
-        element.classList.add('card__category_additional');
+        this.categoryElement.classList.add('card__category_additional');
         break;
       case "кнопка":
-        element.classList.add('card__category_button');
+        this.categoryElement.classList.add('card__category_button');
         break;
       case "хард-скил":
-        element.classList.add('card__category_hard');
+        this.categoryElement.classList.add('card__category_hard');
         break;
       default:
         break;
     }
-  };
+  }
 
-  protected populateCard(element: HTMLElement, data: ICard): void {
-    const categoryElement = element.querySelector('.card__category') as HTMLElement;
-    const priceElement = element.querySelector('.card__price');
-    const titleElement = element.querySelector('.card__title');
-    const imageElement = element.querySelector('.card__image');
-
-    if (categoryElement) {
-      categoryElement.textContent = data.category;
-      this.setCategoryClass(categoryElement, data.category);
+  protected populateCard(data: ICard): void {
+    if (this.categoryElement) {
+      this.categoryElement.textContent = data.category;
+      this.setCategoryClass(data.category);
     }
 
-    if (titleElement) {
-      titleElement.textContent = data.title;
+    if (this.titleElement) {
+      this.titleElement.textContent = data.title;
     }
 
-    if (imageElement) {
-      imageElement.setAttribute('src', CDN_URL + data.image);
+    if (this.imageElement) {
+      this.imageElement.setAttribute('src', CDN_URL + data.image);
     }
 
-    if (priceElement) {
+    if (this.priceElement) {
       if (data.price === null) {
-        priceElement.textContent = 'Бесценно';
+        this.priceElement.textContent = 'Бесценно';
       } else {
-        priceElement.textContent = `${data.price} синапсов`;
+        this.priceElement.textContent = `${data.price} синапсов`;
       }
     }
   }
-
   abstract render(data: ICard, index?: number): HTMLElement;
 };
 
@@ -75,69 +74,74 @@ export class GalleryCardView extends CardView {
   }
 
   render(data: ICard): HTMLElement {
-    const element = this.createElement();
-    this.populateCard(element, data);
+    this.populateCard(data);
 
-    element.addEventListener('click', () => {
+    this.element.addEventListener('click', () => {
       this.events.emit('item:selected', data);
     });
 
-    return element;
+    return this.element;
   }
 };
 
 export class CardPreviewView extends CardView {
+  private buttonElement: HTMLElement;
+  private textElement: HTMLElement;
+
   constructor(events: EventEmitter, template: HTMLTemplateElement) {
     super(events, template);
+    this.buttonElement = this.element.querySelector('.card__button') as HTMLElement;
+    this.textElement = this.element.querySelector('.card__text') as HTMLElement;
   }
 
-  render(data: ICard): HTMLElement {
-    const element = this.createElement();
-    this.populateCard(element, data);
+  render(data: ICard, index?: number, basketIds?: string[]): HTMLElement {
+    this.populateCard(data);
 
-    const buttonElement = element.querySelector('.card__button');
-    const textElement = element.querySelector('.card__text');
-
-    if (textElement) {
-      textElement.textContent = data.description;
+    if (this.textElement) {
+      this.textElement.textContent = data.description;
     }
 
-    if (buttonElement) {
+    if (this.buttonElement) {
       if (data.price === null) {
-        buttonElement.setAttribute('disabled', 'true');
+        this.buttonElement.setAttribute('disabled', 'true');
+      } else if (basketIds?.includes(data.id)) {
+        this.buttonElement.setAttribute('disabled', 'true');
+      } else {
+        this.buttonElement.removeAttribute('disabled');
       }
-      buttonElement.addEventListener('click', () => {
+
+      this.buttonElement.addEventListener('click', () => {
         this.events.emit('basket:add', data);
       });
     }
 
-    return element;
+    return this.element;
   }
 };
 
 export class CardBasketView extends CardView {
+  private indexElement: HTMLElement;
+  private buttonElement: HTMLElement;
+
   constructor(events: EventEmitter, template: HTMLTemplateElement) {
     super(events, template);
+    this.indexElement = this.element.querySelector('.basket__item-index') as HTMLElement;
+    this.buttonElement = this.element.querySelector('.card__button') as HTMLElement;
   }
 
   render(data: ICard, index: number): HTMLElement {
-    const element = this.createElement();
-    const indexElement = element.querySelector('.basket__item-index');
+    this.populateCard(data);
 
-    this.populateCard(element, data);
+    if (this.indexElement) {
+      this.indexElement.textContent = (index + 1).toString();
+    }
 
-    const buttonElement = element.querySelector('.card__button');
-
-    if (buttonElement) {
-      buttonElement.addEventListener('click', () => {
+    if (this.buttonElement) {
+      this.buttonElement.addEventListener('click', () => {
         this.events.emit('item:delete', data);
       });
     }
 
-    if (indexElement) {
-      indexElement.textContent = (index + 1).toString();
-    }
-
-    return element;
+    return this.element;
   }
 };

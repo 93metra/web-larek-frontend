@@ -44,7 +44,6 @@ yarn build
 ## Данные и типы данных:
 
 -Интерфейс для данных каточки товара (в таком виде данные приходят с сервера).
-
 ```
 interface ICard {
   id: string;
@@ -57,16 +56,15 @@ interface ICard {
 ```
 
 -Интерфейс для модели данных карточек(товаров).
-
 ```
 interface ICardsData {
-  cards: ICard[];
+  set cards(cards: ICard[]);
+  get cards(): ICard[];
   getCard(id: string): ICard | undefined;
 }
 ```
 
 -Интерфейс для модели данных корзины.
-
 ```
 interface IBasketModel {
   add(item: ICard): void;
@@ -82,13 +80,11 @@ interface IBasketModel {
 ```
 
 -Тип данных метода оплаты.
-
 ```
-type TPaymentMethod = 'online' | 'cash';
+type TPaymentMethod = '' | 'card' | 'cash';
 ```
 
--Интерфейс для модели данных заказа.
-
+-Интерфейс данных заказа отправляемых на сервер.
 ```
 interface IOrderDetails {
   payment: TPaymentMethod;
@@ -98,38 +94,55 @@ interface IOrderDetails {
 }
 ```
 
--Интерфейс для отображения главной страницы.
+-Интерфейс для модели данных заказа.
+```
+interface IOrderModel {
+  set payment(payment: TPaymentMethod); 
+  set email(email: string);
+  set phone(phone: string);
+  set address(address: string);
 
+  get order(): IOrderDetails;
+  get payment(): TPaymentMethod;
+  get email(): string;
+  get phone(): string;
+  get address(): string;
+
+  validatePayment(payment: TPaymentMethod): boolean;
+  validateEmail(email: string): boolean;
+  validatePhone(phone: string): boolean;
+  validateAddress(address: string): boolean;
+
+  clearOrder(): void;
+}
+```
+-Интерфейс для отображения главной страницы.
 ```
 interface IPage {
-	counter: number;
-	catalog: HTMLElement[];
-	basket: HTMLElement;
-	locked: boolean;
+  set counter(value: number);
+  set catalog(items: HTMLElement[]);
+  set locked(value: boolean);
+  get basket(): HTMLElement;
 }
 ```
 
 -Интерфейс для отображения модалки.
-
 ```
 interface IModal {
-	content: HTMLElement;
-	closeButton: HTMLButtonElement;
+  set content(value: HTMLElement)
 	open(): void;
 	close(): void;
 }
 ```
 
 -Интерфейс для отображения карточки.
-
 ```
 interface ICardView {
-  render(data: ICard, index?: number): HTMLElement;
+  render(data: ICard, index?: number, basketIds?: string[]): HTMLElement;
 }
 ```
 
 -Интерфейс для отображения корзины.
-
 ```
 interface IBasketView {
   render(data: { items: HTMLElement[]; price: number; isEmpty: boolean }): HTMLElement;
@@ -137,19 +150,22 @@ interface IBasketView {
 ```
 
 -Интерфейс для отображения форм.
-
 ```
-export interface IFormView {
-  render(): HTMLElement;
+interface IFormView {
+  render(...args: any[]): HTMLElement;
 }
 ```
 
 -Интерфейс для отображения успешного заказа.
-
 ```
-export interface ISuccess {
+interface ISuccess {
   render(total: number): HTMLElement;
 }
+```
+
+-Тип данных ответа сервера.
+```
+type TApiSuccessResp = {id: string, total: number}
 ```
 
 ## Архитектура приложения
@@ -205,7 +221,7 @@ export interface ISuccess {
 В полях класса хранятся следующие данные:
 
 - private _items: ICard[] - хранит товары, добавленные в корзину.
-- events: IEvents - экземпляр класса EventEmitter для инициации событий при изменении данных.
+- private events: IEvents - экземпляр класса EventEmitter для инициации событий при изменении данных.
 
 Методы:
 
@@ -220,43 +236,53 @@ export interface ISuccess {
 - isEmpty(): boolean - Проверяет, пуста ли корзина.
 - private _changed(): void - Защищенный метод, который инициирует событие 'basket:changed', передавая текущие товары корзины.
 
-#### Класс OrderDetails
+#### Класс OrderModel
+Реализует интерфейс IOrderModel.
 Класс отвечает за хранение и заполнение, объекта с данными заказа (только данные клиента, список товаров и сумма заказа будут браться из модели корзины).
 
 В полях класса хранятся следующие данные:
 - private _orderDetails: IOrderDetails; - Хранит даные заказа.
-- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
+- private events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Методы:
 - set payment(payment: TPaymentMethod) - Вызывает свой валидатор. Устанавливает способ оплаты. 
-- set email(email: string) - Вызывает свой валидатор. Устанавливает адрес доставки.
+- set email(email: string) - Вызывает свой валидатор. Устанавливает почту.
 - set phone(phone: string) - Вызывает свой валидатор. Устанавливает телефон.
 - set address(address: string) - Вызывает свой валидатор. Устанавливает адрес доставки.
+- get payment(): TPaymentMethod - Возвращает способ оплаты.
+- get email(): string - Возвращает почту.
+- get phone(): string - Возвращает телефон.
+- get address(): string - Возвращает адрес доставки.
 - get order(): IOrderDetails - Возвращает данные заказа.
 
-- private validatePayment(payment: TPaymentMethod): void - валидатор способа оплаты.
-- private validateEmail(email: string): void - валидатор email.
-- private validatePhone(phone: string): void - валидатор телефона.
-- private validateAddress(address: string): void - валидатор адреса.
+- validatePayment(payment: TPaymentMethod): boolean - валидатор способа оплаты.
+- validateEmail(email: string): boolean - валидатор email.
+- validatePhone(phone: string): boolean - валидатор телефона.
+- validateAddress(address: string): boolean - валидатор адреса.
+
+- clearOrder(): void - очищает данные заказа.
 
 ### Слой отображения
 
 #### Класс PageView
-Отображение главной страницы. Реализует интерфейс IPage.
-Конструктор класса принимает инстант брокера событий и (container: HTMLElement) для определения в нем нужных элементов.
-На элемент корзины устанавливается обработчик клика вызывающий событие 'basket:open'.
+Реализует интерфейс IPage.
+Класс отвечает за отображение страницы и управление элементами DOM, связанными с представлением страницы.
+Конструктор класса принимает экземпляр брокера событий и контейнер элемента страницы.
 
 В полях класса хранятся следующие данные:
-- _counter: HTMLElement - количество товаров в корзине.
-- _catalog: HTMLElement - каталог товаров.
-- _wrapper: HTMLElement - обертка страницы (для блокировки прокрутки при открытом попапе).
-- _basket: HTMLElement - элемент корзины.
-- events: IEvents - экземпляр, реализующий интерфейс IEvents, используемый для управления событиями страницы.
+
+- private _counter: HTMLElement - элемент DOM, отображающий количество товаров в корзине.
+- private _catalog: HTMLElement - элемент DOM, представляющий каталог товаров.
+- private _wrapper: HTMLElement - элемент DOM, являющийся контейнером для всей страницы.
+- private _basket: HTMLElement - элемент DOM, представляющий корзину.
+- private _events: IEvents - экземпляр класса EventEmitter для инициации событий при взаимодействии с элементами страницы.
 
 Методы:
-- set counter(value: number) - Устанавливает значение счетчика корзины.
-- set catalog(items: HTMLElement[]) - Устанавливает каталог товаров, заменяя текущее содержимое элемента _catalog на новый массив.
-- set locked(value: boolean) - Блокирует страницу, добавляя или удаляя класс page__wrapper_locked из элемента _wrapper.
+
+- set counter(value: number) - Устанавливает количество товаров в корзине.
+- set catalog(items: HTMLElement[]) - Устанавливает список карточек товаров.
+- get basket(): HTMLElement -Возврвщвет DOM элемент, представляющий корзину.
+- set locked(value: boolean) - Блокирует и разблокирует возможность прокрутки страницы.
 
 #### Класс ModalView
 Реализует интерфейс IModal.
@@ -268,8 +294,8 @@ export interface ISuccess {
 
 - private _content: HTMLElement - элемент, содержащий контент модального окна.
 - private _container: HTMLElement - контейнер, в котором находится модальное окно.
-- closeButton: HTMLButtonElement - кнопка для закрытия модального окна.
-- events: IEvents - экземпляр класса EventEmitter для инициации событий при изменении состояния модального окна.
+- private closeButton: HTMLButtonElement - кнопка для закрытия модального окна.
+- private events: IEvents - экземпляр класса EventEmitter для инициации событий при изменении состояния модального окна.
 
 Методы:
 
@@ -282,20 +308,23 @@ export interface ISuccess {
 
 #### Класс CardView
 Реализует интерфейс ICardView.
-Класс отвечает за создание и базовую настройку элементов карточек.
-Конструктор класса принимает экземпляр EventEmitter для обработки событий и HTMLTemplateElement для клонирования шаблона.
+Абстрактный класс, реализующий интерфейс ICardView. Класс служит основой для отображения карточек товаров. Содержит общую логику для всех типов карточек.
+Конструктор класса принимает экземпляр брокера событий и шаблон карточки.
 
 В полях класса хранятся следующие данные:
 
-- protected events: EventEmitter - экземпляр класса EventEmitter для инициации событий.
-- private template: HTMLTemplateElement - шаблон для клонирования HTML-элементов карточки.
+- protected events: EventEmitter - экземпляр класса EventEmitter для работы с событиями.
+- protected element: HTMLElement - элемент карточки, клонированный из шаблона.
+- protected categoryElement: HTMLElement - элемент для отображения категории товара.
+- protected priceElement: HTMLElement - элемент для отображения цены товара.
+- protected titleElement: HTMLElement - элемент для отображения названия товара.
+- protected imageElement: HTMLElement - элемент для отображения изображения товара.
 
 Методы:
 
-- protected createElement(): HTMLElement - создает и возвращает элемент карточки, клонируя содержимое шаблона.
-- protected setCategoryClass(element: HTMLElement, category: string): void - устанавливает CSS-класс для элемента в зависимости от категории.
-- protected populateCard(element: HTMLElement, data: ICard): void - заполняет элемент карточки данными (категория, название, изображение, цена).
-- abstract render(data: ICard, index?: number): HTMLElement - абстрактный метод, который должен быть реализован в наследуемых классах для отрисовки карточки.
+- protected setCategoryClass(category: string): void - устанавливает CSS-класс категории товара в зависимости от её значения.
+- protected populateCard(data: ICard): void - заполняет элементы карточки данными товара (category, title, image, price).
+- abstract render(data: ICard, index?: number): HTMLElement - абстрактный метод для отрисовки карточки, реализуется в дочерних классах.
 
 #### Класс GalleryCardView
 Наследуется от CardView.
@@ -306,20 +335,29 @@ export interface ISuccess {
 - render(data: ICard): HTMLElement - переопределяет метод из CardView, заполняя элемент данными карточки и добавляя обработчик события клика, который инициирует событие 'item:selected'.
 
 #### Класс CardPreviewView
-Наследуется от CardView.
-Класс отвечает за отрисовку превью карточек.
+Наследуется от CardView. Класс отвечает за предварительный просмотр карточек товаров и добавление их в корзину.
+
+В полях класса хранятся следующие данные:
+
+- private buttonElement: HTMLElement - кнопка для добавления товара в корзину.
+- private textElement: HTMLElement - элемент для отображения описания товара.
 
 Методы:
 
-- render(data: ICard): HTMLElement - переопределяет метод из CardView, заполняя элемент данными карточки, добавляет описание, кнопку и устанавливает обработчик события клика на кнопку, который инициирует событие 'basket:add'.
+- render(data: ICard, index?: number, basketIds?: string[]): HTMLElement - отрисовывает карточку товара, отображает описание и управляет состоянием кнопки в зависимости от наличия товара в корзине. Устанавливает обработчик события клика на кнопку, который инициирует событие 'basket:add'.
 
 #### Класс CardBasketView
 Наследуется от CardView.
 Класс отвечает за отрисовку карточек товаров в корзине.
 
+В полях класса хранятся следующие данные:
+
+- private indexElement: HTMLElement - элемент для отображения порядкового номера товара в корзине.
+- private buttonElement: HTMLElement - кнопка для удаления товара из корзины.
+
 Методы:
 
-- render(data: ICard, index: number): HTMLElement - переопределяет метод из CardView, заполняя элемент данными карточки и добавляя индекс элемента в корзине. Устанавливает обработчик события клика на кнопку, который инициирует событие 'item:delete'.
+- render(data: ICard, index: number): HTMLElement - отрисовывает карточку товара, отображает порядковый номер товара в корзине и устанавливает обработчик события клика на кнопку, который инициирует событие 'item:delete'.
 
 #### Класс BasketView
 Реализует интерфейс IBasketView.
@@ -328,11 +366,11 @@ export interface ISuccess {
 
 В полях класса хранятся следующие данные:
 
-- events: IEvents - экземпляр класса EventEmitter для управления событиями пользовательского интерфейса.
-- productsList: HTMLUListElement - элемент списка для отображения товаров в корзине.
-- totalPrice: HTMLSpanElement - элемент для отображения общей стоимости товаров в корзине.
-- submitOrder: HTMLButtonElement - кнопка для оформления заказа.
-- basketElement: HTMLElement - корневой элемент корзины.
+- private events: IEvents - экземпляр класса EventEmitter для управления событиями пользовательского интерфейса.
+- private productsList: HTMLUListElement - элемент списка для отображения товаров в корзине.
+- private totalPrice: HTMLSpanElement - элемент для отображения общей стоимости товаров в корзине.
+- private submitOrder: HTMLButtonElement - кнопка для оформления заказа.
+- private basketElement: HTMLElement - корневой элемент корзины.
 
 Методы:
 
@@ -345,44 +383,54 @@ export interface ISuccess {
 
 #### Класс Form
 Реализует интерфейс IFormView.
-Класс отвечает за создание и отображение элементов формы, а также за управление ошибками отображения.
+Класс отвечает за базовую логику работы с формами.
 Конструктор класса принимает экземпляр брокера событий и шаблон.
 
 В полях класса хранятся следующие данные:
 
-- protected events: EventEmitter - Экземпляр класса EventEmitter для инициации событий при изменении данных.
-- protected template: HTMLTemplateElement - шаблон для создания элемента формы.
+- protected events: EventEmitter - экземпляр класса EventEmitter, используемый для инициации событий.
+- protected template: HTMLTemplateElement - шаблон для создания формы.
+- protected element: HTMLElement - элемент формы, созданный на основе шаблона.
+- protected submitButton: HTMLButtonElement - кнопка отправки формы.
 
 Методы:
 
-- render(): HTMLElement - Абстрактный метод, который должен быть реализован в классах-наследниках и возвращать готовый элемент формы.
-- protected createElement(): HTMLElement - Создает и возвращает элемент на основе переданного шаблона.
-- protected showError(element: HTMLElement, message: string): void - Отображает сообщение об ошибке в переданном элементе формы.
-- protected clearError(element: HTMLElement): void - Очищает сообщение об ошибке в переданном элементе формы.
+- render(...args: any[]): HTMLElement - метод отрисовки формы, возвращает элемент формы. В базовой реализации не реализован.
+- protected showError(message: string): void - метод, выводящий сообщение об ошибке в элемент формы.
+- protected clearError(): void - метод, очищающий сообщение об ошибке.
+- clearForm(): void - очищает все поля формы и блокирует кнопку отправки.
 
 #### Класс PaymentView
-Наследуется от класса Form.
-Класс отвечает за отображение и валидацию формы оплаты.
+Наследуется от Form.
+Класс отвечает за работу с формой оплаты.
 Конструктор класса принимает экземпляр брокера событий и шаблон.
 
+В полях класса хранятся следующие данные:
+
+- private addressInput: HTMLInputElement - поле для ввода адреса доставки.
+- private buttons: NodeListOf<HTMLButtonElement> - кнопки выбора метода оплаты.
+- private payment: string | null - выбранный метод оплаты (по умолчанию null).
+
 Методы:
 
-- render(): HTMLElement - Создает и возвращает элемент формы оплаты, добавляет обработчики событий для элементов формы.
-- private validateForm(): void - Проверяет заполненность полей формы и устанавливает состояние кнопки отправки формы.
-- private showError(element: HTMLElement, message: string): void - Отображает сообщение об ошибке в переданном элементе формы.
-- private clearError(element: HTMLElement): void - Очищает сообщение об ошибке в переданном элементе формы.
+- render(paymentIsValid: boolean = false): HTMLElement - метод отрисовки формы оплаты. Добавляет обработчики событий для ввода адреса и выбора метода оплаты, а также для отправки формы. Блокирует кнопку отправки, если данные некорректны.
+- formIsValid(paymentIsValid: boolean, adressIsValid: boolean): void - Разблокирует или блокирует кнопку отправки в зависимости от состояния формы.
+- private updateButtonState(): void - обновляет состояние кнопок выбора метода оплаты, выделяя активную кнопку.
 
 #### Класс ContactsView
-Наследуется от класса Form.
-Класс отвечает за отображение и валидацию формы контактов.
+Наследуется от Form.
+Класс отвечает за работу с формой контактов.
 Конструктор класса принимает экземпляр брокера событий и HTML-шаблон.
+
+В полях класса хранятся следующие данные:
+
+- private emailInput: HTMLInputElement - поле для ввода email.
+- private phoneInput: HTMLInputElement - поле для ввода телефона.
 
 Методы:
 
-- render(): HTMLElement - Создает и возвращает элемент формы контактов, добавляет обработчики событий для элементов формы.
-- private validateForm(): void - Проверяет заполненность полей формы и устанавливает состояние кнопки отправки формы.
-- private showError(element: HTMLElement, message: string): void - Отображает сообщение об ошибке в переданном элементе формы.
-- private clearError(element: HTMLElement): void - Очищает сообщение об ошибке в переданном элементе формы.
+- render(phoneIsValid: boolean = false, emailIsValid: boolean = false): HTMLElement - метод отрисовки формы контактов. Добавляет обработчики событий для ввода email и телефона, а также для отправки формы. Блокирует кнопку отправки, если данные некорректны.
+- formIsValid(phoneIsValid: boolean, emailIsValid: boolean): void - Разблокирует или блокирует кнопку отправки в зависимости от состояния формы.
 
 #### Класс Success
 Отображение сообщения об успешной оплате.
@@ -397,7 +445,7 @@ export interface ISuccess {
 - private template: HTMLTemplateElement - шаблон для клонирования элементов карточки
 
 Методы:
-- render(price: number): HTMLElement - возвращает готовый элемент.
+- render(totalPrice: number): HTMLElement - возвращает готовый элемент.
 
 ### Презентер
 Модели и отображение будут связываться с использованием событийно-ориентированного подхода, сам код презентера не будет выделен в отдельный класс, а будет размещен в основном скрипте приложения index.ts.
@@ -405,22 +453,22 @@ export interface ISuccess {
 
 - При загрузке сайта:
 -Создаются экземпляры классов: LarekApi, EventEmitter, CardsData, BasketModel, OrderDetails, PageView, ModalView.
--С сервера запрашивается список товаров и сохраняется в модель CardsData в следствии чего вызывается событие 'cards:updated' передавая массив карточек, на основании переданного массива создается массив элементов карточек товара (СatalogCardVeiw) и вставляется в список товаров внутри (PageView).
+-С сервера запрашивается список товаров и сохраняется в модель CardsData в следствии чего вызывается событие 'cards:updated' передавая массив карточек. На основании переданного массива создается массив элементов карточек товара (СatalogCardVeiw) и вставляется в список товаров внутри (PageView).
 
-- Нажатие на карточку товара в каталоге (СatalogCardVeiw) вызывает событие 'product:selected' передавая данные товара. С использованием этих данных (CardPreviewVeiw) отрисовывает элемент предпросмотра товара и вставляется в мадалку (ModalView), после чего, модалка отображается на экране.
+- Нажатие на карточку товара в каталоге (СatalogCardVeiw) вызывает событие 'item:selected' передавая данные товара. С использованием этих данных (CardPreviewVeiw) отрисовывает элемент предпросмотра товара и вставляется в мадалку (ModalView), после чего, модалка отображается на экране.
 
-- Нажатие на кнопку добавления в корзину вызывает событие 'product:add' передавая данные товара. Данные сохраняются в модель корзины (BasketModel). Модальное окно закрывается.
+- Нажатие на кнопку добавления в корзину вызывает событие 'basket:add' передавая данные товара. Данные сохраняются в модель корзины (BasketModel). Модальное окно закрывается.
 
 - При вызове функций добавления товара и удаления товара вызывается событие 'basket:changed' передавая id соответствующего товара. Реакцией на это событие является: Соответствующее изменение в модели данных корзины (BasketModel), перерисовка отображения корзины (BasketView) и обнавление счетчика товаров в корзине на главной странице.
 
 - Нажатие на корзину вызывает событие 'basket:open'. Используя данные и методы модели корзины отрисовывается элемент корзины (BasketView), отрисовываются элементы корзины (BasketItemView), вставляются в корзину, после чего, корзина вставляется в модалку и отображается на экране.
 
-- Нажатие на кнопку удаления товара из корзины вызывает событие 'basket:changed' описанное выше.
+- Нажатие на кнопку удаления товара из корзины вызывает событие 'item:delete' передавая id соответствующего товара, иодель корзины удаляет соответствующий товар и вызывается событие 'basket:changed' описанное выше.
 
 - Нажатие на кнопку оформления заказа вызывает событие 'goto:payment'. Отрисовывается элемент выбора метода оплаты (PaymentView) и вставляется в модалку.
 
 - Нажатие на кнопку далее вызывает событие 'goto:email' передавая способ оплаты и адрес. Эти данные сохраняются в модель зказа (OrderDetails). Отрисовывается элемент ввода почты и телефона (ContactsView) и вставляется в модалку.
 
-- Нажатие на кнопку оплатить вызывает событие 'submit:order' передавая почту и телефон. Эти данные сохраняются в модель зказа (OrderDetails). После чего, в методе отправки заказа на сервер (LarekApi) собирается объект с данными заказа. Они берутся из модели (OrderDetails) и модели корзины (BasketModel). Заказ отравляется на сервер. Корзина очищается. Отрисовывается сообщения об успешной оплате (Success) и вставляется в модалку.
+- Нажатие на кнопку оплатить вызывает событие 'submit:order' передавая почту и телефон. Эти данные сохраняются в модель зказа (OrderDetails). После чего, в методе отправки заказа на сервер (LarekApi) собирается объект с данными заказа. Они берутся из модели (OrderDetails) и модели корзины (BasketModel). Заказ отравляется на сервер. Корзина очищается. Отрисовывается сообщение об успешной оплате (Success) и вставляется в модалку.
 
 - Нажатие на кнопку за новыми покупками вызывает событие 'order:submited'. Модальное окно закрывается. 

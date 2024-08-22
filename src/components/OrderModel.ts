@@ -1,17 +1,17 @@
 import { IEvents } from '../components/base/events';
-import { IOrderDetails, TPaymentMethod } from '../types';
+import { IOrderModel, IOrderDetails, TPaymentMethod } from '../types';
 
-export class OrderDetails {
+export class OrderModel implements IOrderModel {
   private _orderDetails: IOrderDetails;
-  public events: IEvents;
+  private events: IEvents;
 
   constructor(events: IEvents) {
-    this._orderDetails = { payment: 'cash', email: '', phone: '', address: '' };
+    this._orderDetails = { payment: '', email: '', phone: '', address: '' };
     this.events = events;
   }
 
   set payment(payment: TPaymentMethod) {
-    // this.validatePayment(payment);
+    this.validatePayment(payment);
     this._orderDetails.payment = payment;
     this.events.emit('orderUpdated', this._orderDetails);
   }
@@ -54,28 +54,38 @@ export class OrderDetails {
     return this._orderDetails.address;
   }
 
-  private validatePayment(payment: TPaymentMethod): void {
-    if (payment !== 'cash' && payment !== 'online') {
-      throw new Error('Invalid payment method');
+  validatePayment(payment: TPaymentMethod): boolean {
+    if (payment !== 'cash' && payment !== 'card') {
+      return false;
     }
+    return true;
   }
 
-  private validateEmail(email: string): void {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email address');
+  validateEmail(email: string): boolean {
+    if (email.trim().length === 0) {
+      return false;
     }
+    return true;
   }
 
-  private validatePhone(phone: string): void {
-    if (!phone.startsWith('+')) {
-      throw new Error('Phone number must start with a "+"');
+  validatePhone(phone: string): boolean {
+    if (phone.trim().length === 0) {
+      return false;
     }
+    return true;
   }
 
-  private validateAddress(address: string): void {
+  validateAddress(address: string): boolean {
     if (address.trim().length === 0) {
-      throw new Error('Address cannot be empty');
+      return false;
     }
+    return true;
+  }
+
+  clearOrder(): void {
+    this.address = '';
+    this.email = '';
+    this.phone = '';
+    this.payment = '';
   }
 };

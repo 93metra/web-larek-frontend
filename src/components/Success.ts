@@ -16,8 +16,8 @@ export class Success implements ISuccess {
     this.closeButton = this.element.querySelector('.order-success__close') as HTMLButtonElement;
   }
 
-  render(total: number): HTMLElement {
-    this.priceElement.textContent = `Списано ${total} синапсов`;
+  render(totalPrice: number): HTMLElement {
+    this.priceElement.textContent = `Списано ${totalPrice} синапсов`;
 
     this.closeButton.addEventListener('click', () => {
       this.events.emit('order:submited');

@@ -4,7 +4,7 @@ import { IBasketModel } from '../types';
 
 export class BasketModel implements IBasketModel {
   private _items: ICard[];
-  public events: IEvents;
+  private events: IEvents;
 
   constructor(events: IEvents) {
     this._items = [];
@@ -29,6 +29,7 @@ export class BasketModel implements IBasketModel {
 
   clear(): void {
     this._items = [];
+    this._changed();
   };
 
   getTotal(): number {

@@ -4,8 +4,8 @@ import { IModal } from '../types/index';
 export class ModalView implements IModal {
   private _content: HTMLElement;
   private _container: HTMLElement;
-  public closeButton: HTMLButtonElement;
-  public events: IEvents;
+  private closeButton: HTMLButtonElement;
+  private events: IEvents;
 
   constructor(events: IEvents, container: HTMLElement) {
     this.events = events;
@@ -18,8 +18,8 @@ export class ModalView implements IModal {
   }
 
   set content(value: HTMLElement) {
-    this._content.innerHTML = ''; 
-    this._content.appendChild(value); 
+    this._content.innerHTML = '';
+    this._content.appendChild(value);
   }
 
   open() {
@@ -30,7 +30,7 @@ export class ModalView implements IModal {
   close() {
     this._container.classList.remove('modal_active');
     this.emitCloseEvent();
-    this._content.innerHTML = ''; 
+    this._content.innerHTML = '';
   }
 
   private onContainerClick(event: MouseEvent) {
@@ -42,7 +42,7 @@ export class ModalView implements IModal {
   private emitCloseEvent() {
     this.events.emit('modal:close');
   }
-  
+
   private emitOpenEvent() {
     this.events.emit('modal:open');
   }

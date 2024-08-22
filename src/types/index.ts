@@ -8,7 +8,8 @@ export interface ICard {
 }
 
 export interface ICardsData {
-  cards: ICard[];
+  get cards(): ICard[];
+  set cards(cards: ICard[]);
   getCard(id: string): ICard | undefined;
 }
 
@@ -24,7 +25,27 @@ export interface IBasketModel {
   items: ICard[];
 }
 
-export type TPaymentMethod = 'online' | 'cash';
+export interface IOrderModel {
+  set payment(payment: TPaymentMethod); 
+  set email(email: string);
+  set phone(phone: string);
+  set address(address: string);
+
+  get order(): IOrderDetails;
+  get payment(): TPaymentMethod;
+  get email(): string;
+  get phone(): string;
+  get address(): string;
+
+  validatePayment(payment: TPaymentMethod): boolean;
+  validateEmail(email: string): boolean;
+  validatePhone(phone: string): boolean;
+  validateAddress(address: string): boolean;
+
+  clearOrder(): void;
+}
+
+export type TPaymentMethod = '' | 'card' | 'cash';
 
 export interface IOrderDetails {
   payment: TPaymentMethod;
@@ -34,21 +55,20 @@ export interface IOrderDetails {
 }
 
 export interface IPage {
-	counter: number;
-	catalog: HTMLElement[];
-	basket: HTMLElement;
-	locked: boolean;
+  set counter(value: number);
+  set catalog(items: HTMLElement[]);
+  set locked(value: boolean);
+  get basket(): HTMLElement;
 }
 
 export interface IModal {
-	content: HTMLElement;
-	closeButton: HTMLButtonElement;
+  set content(value: HTMLElement);
 	open(): void;
 	close(): void;
 }
 
 export interface ICardView {
-  render(data: ICard, index?: number): HTMLElement;
+  render(data: ICard, index?: number, basketIds?: string[]): HTMLElement;
 }
 
 export interface IBasketView {
@@ -56,9 +76,11 @@ export interface IBasketView {
 }
 
 export interface IFormView {
-  render(): HTMLElement;
+  render(...args: any[]): HTMLElement;
 }
 
 export interface ISuccess {
   render(total: number): HTMLElement;
 }
+
+export type TApiSuccessResp = {id: string, total: number}

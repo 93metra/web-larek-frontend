@@ -2,11 +2,11 @@ import { IBasketView } from "../types";
 import { IEvents } from "../components/base/events";
 
 export class BasketView implements IBasketView {
-  events: IEvents;
-  productsList: HTMLUListElement;
-  totalPrice: HTMLSpanElement;
-  submitOrder: HTMLButtonElement;
-  basketElement: HTMLElement;
+  private events: IEvents;
+  private productsList: HTMLUListElement;
+  private totalPrice: HTMLSpanElement;
+  private submitOrder: HTMLButtonElement;
+  private basketElement: HTMLElement;
 
   constructor(events: IEvents, template: HTMLTemplateElement) {
     this.events = events;
@@ -35,4 +35,4 @@ export class BasketView implements IBasketView {
 
     return this.basketElement;
   }
-}
+};

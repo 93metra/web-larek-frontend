@@ -4,7 +4,7 @@ import { ICardsData } from '../types';
 
 export class CardsData implements ICardsData {
   private _cards: ICard[];
-  public events: IEvents;
+  private events: IEvents;
 
   constructor(events: IEvents) {
     this._cards = [];
